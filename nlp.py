@@ -1,39 +1,60 @@
-from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
 from transformers import pipeline
-from sklearn.feature_extraction.text import CountVectorizer
+
+import re
+
 
 def extract_topics(transcription):
     """
-    Extract topics from the transcription using a text vectorizer.
+    Extract topics from a transcription using CountVectorizer.
+    Ensures the transcription is meaningful before processing.
     """
-    if transcription is None:
-        raise ValueError("Transcription is None. Cannot extract topics.")
+    try:
+        # Debugging: log the transcription
+        print(f"Transcription received for topic extraction: {transcription}")
 
-    vectorizer = CountVectorizer()
-    doc_term_matrix = vectorizer.fit_transform([transcription])
+        # Check if transcription is empty or consists of gibberish
+        if not transcription or not transcription.strip():
+            raise ValueError("Transcription is empty or invalid.")
 
-    # Your topic extraction logic here
-    return doc_term_matrix
+        # Optional: Clean up the transcription using regex (remove non-alphabetic characters)
+        transcription_cleaned = re.sub(r'[^a-zA-Z\s]', '', transcription)
 
-# Function to extract topics from transcription
-def extract_topics(transcription, n_topics=5):
-    vectorizer = CountVectorizer(stop_words='english')
-    doc_term_matrix = vectorizer.fit_transform([transcription])
+        # Further clean by removing repeated sequences (e.g., "HELLO HELLO" -> "HELLO")
+        transcription_cleaned = re.sub(r'\b(\w+)\b(?:\s+\1\b)+', r'\1', transcription_cleaned)
 
-    lda = LatentDirichletAllocation(n_components=n_topics)
-    lda.fit(doc_term_matrix)
+        # Check if cleaned transcription still has meaningful content
+        if len(transcription_cleaned.split()) < 3:  # Arbitrary threshold for minimal valid content
+            raise ValueError("Transcription is too short or contains meaningless content.")
 
-    words = vectorizer.get_feature_names_out()
-    topics = []
-    for topic_idx, topic in enumerate(lda.components_):
-        topic_words = [words[i] for i in topic.argsort()[:-n_topics - 1:-1]]
-        topics.append(f"Topic {topic_idx}: {', '.join(topic_words)}")
+        # Initialize CountVectorizer
+        vectorizer = CountVectorizer(stop_words='english')
 
-    return topics
+        # Fit and transform the cleaned transcription into a document-term matrix
+        doc_term_matrix = vectorizer.fit_transform([transcription_cleaned])
+
+        # Check if the vocabulary is empty (i.e., no valid words remain after stop words removal)
+        if doc_term_matrix.shape[1] == 0:
+            raise ValueError("Transcription only contains stop words or is empty.")
+
+        # Return the vocabulary as topics
+        return vectorizer.get_feature_names_out()
+
+    except ValueError as ve:
+        print(f"ValueError: {ve}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred during topic extraction: {e}")
+        return None
+
 
 # Function for sentiment analysis
 def analyze_sentiment(transcription):
-    sentiment_analyzer = pipeline("sentiment-analysis")
-    sentiments = sentiment_analyzer(transcription)
-    return sentiments
+    try:
+        # Use a PyTorch-based model
+        sentiment_analyzer = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english", framework="pt")
+        sentiments = sentiment_analyzer(transcription)
+        return sentiments
+    except Exception as e:
+        print(f"Error during sentiment analysis: {e}")
+        return None
