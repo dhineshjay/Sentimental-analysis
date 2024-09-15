@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processed Results</title>
+</head>
+<body>
+    <h1>Processed Results</h1>
+
+    <h2>Transcription:</h2>
+    <p>{{ transcription }}</p>
+
+    <h2>Topics:</h2>
+    <ul>
+        {% for topic in topics %}
+        <li>{{ topic }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Sentiment Summary:</h2>
+    <p>Positive: {{ sentiment['positive'] }}</p>
+    <p>Negative: {{ sentiment['negative'] }}</p>
+    <p>Neutral: {{ sentiment['neutral'] }}</p>
+
+    <h2>Insights:</h2>
+    <p>{{ insights['suggestions'] }}</p>
+
+    <h2>Summary:</h2>
+    <p>{{ summary }}</p>
+</body>
+</html>
